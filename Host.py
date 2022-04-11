@@ -23,7 +23,7 @@ class host:
         self.PROG = 0
         self.QUESTNUM = 5
         self.STAT = 0
-        self.PLAYER_NUM = 2
+        self.PLAYER_NUM = 1
         self.get_pin()  # gets pin
         #except:
          #   resety(root)
@@ -68,6 +68,26 @@ class host:
 
     def send_to_player(self,plyr,msg):
         plyr.temp.socket.send(self.build_answer(msg).encode())
+
+    def pickle_something(self, somth):
+        msg = pickle.dumps(somth)
+        #self.src_sock.send(str(len(msg)).encode())
+        ln = len(msg)
+        ans = (str(ln) + "_").encode() +  msg
+        print(ans)
+        self.src_sock.send(ans)
+        print("sent")
+
+    def build_answer(self,ans):  # builds apropriate answer according to protocol
+        return str(len(ans)) + "_" + ans
+
+    def send_bytes(self, what):
+        self.send_answer(str(len(what)))
+        self.src_sock.send(what)
+
+    def send_answer(self, ans):
+        print((self.build_answer(ans)).encode('utf-8').strip())
+        self.src_sock.send((self.build_answer(ans)).encode('utf-8').strip())
 
 
     def connect_client(self,c, root, pin):  # connects client and sets him up with the clients nickname
@@ -132,7 +152,14 @@ class host:
                     self.lobby.resety()
                     CRNT_FRM = self.lobby.question( num, quest, arr1)
             for i in self.CLINET_ARR:
-                i.end_client()
+                i.temp.end_client()
+            self.lobby.resety()
+            self.lobby.ending(self.CLINET_ARR)
+            while True:
+                if self.lobby.quest_button:
+                    self.lobby.quest_button = False
+                    break
+
 
     def split_lines(self,frst):
         arr = []
@@ -142,6 +169,32 @@ class host:
             arr.append(var[0])
             l += 1
         return arr
+
+    def send_clients(self):
+        self.dict_clients()
+        self.pickle_something(self.out_dict)
+
+
+
+
+    def dict_clients(self):
+        self.out_dict = {}
+        n=0
+        for i in self.CLINET_ARR:
+            print(i.top_3_rate)
+            i.update(n)
+            print(i.top_3_rate)
+            print(i.name)
+            print(i.games)
+            self.out_dict[i.name] = i.to_string()
+            n=n+1
+
+
+
+
+
+
+
 
     def handle_ans(self,true, cli):  # handles the given ans and adds points accordingly
         global lock

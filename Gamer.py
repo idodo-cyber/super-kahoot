@@ -56,11 +56,16 @@ class gamer:
                 self.STRT_TIME = datetime.now()
                 self.gmr.answer_screen()
                 while True:
+                    end_time = datetime.now()
+                    time_diff = (end_time - self.STRT_TIME)
+                    execution_time = time_diff.total_seconds() * 1000
                     if self.gmr.pressed_click:
                         self.gmr.pressed_click = False
                         answer = self.build_ans(self.gmr.choice)
                         #print(answer)
                         self.send_answer(answer)
+                        break
+                    elif execution_time > 20000:
                         break
                 self.gmr.waiting()
                 point = self.all_mesage(self.Hsock).split("_")
@@ -68,6 +73,8 @@ class gamer:
                 print(point)
                 self.gmr.between(point)
         print("congrats u finished game")
+        self.gmr.resety()
+        self.gmr.ending( point)
 
 
 

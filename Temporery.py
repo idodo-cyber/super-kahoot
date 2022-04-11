@@ -43,7 +43,7 @@ class Temp:
 
 def all_mesage(sock):  # recievs all of the message based on the message length given at the begining of the messsage
     try:
-        sock.settimeout(20000)
+        sock.settimeout(20)
         lent = sock.recv(1).decode()
         while "_" not in lent:
             lent += sock.recv(1).decode()

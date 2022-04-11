@@ -37,6 +37,7 @@ def before_game(root,s):
             ans = all_mesage(s)
             print(ans)
             if ans == "connected":
+                print("woodooo")
                 break
             screen1.login_wrong()
             while True:
@@ -76,6 +77,12 @@ def build_answer(ans):#builds apropriate answer according to protocol
 
 
 
+
+
+
+
+
+
 def send_answer(s,ans):
     s.send((build_answer(ans)).encode())
 
@@ -107,25 +114,35 @@ def client(root):
     before_game(root,s)
     print("enters game")
     clnt = unpickle_something(s)
-    home_screen = Home(root,"800x300",clnt)
+    home_screen = Home(root, "800x300", clnt)
     while True:
+
         if home_screen.play:
             print("player succes")
-            home_screen.player = False
+            home_screen.play = False
             gmr = gamer(s,root,"800x300",home_screen)
             gmr.get_addr(0)
             gmr.cnct_client(clnt)
             print(gmr.Haddres)
             gmr.play_game()
+            gmr.Hsock.close()
+            send_answer(s, "REF")
+            clnt = unpickle_something(s)
+            home_screen = Home(root, "800x300", clnt)
 
-            break
         elif home_screen.host:
             home_screen.host = False
             hst = host(s,root,"800x300",home_screen)
             print(hst.pin)
             hst.handle_lobby()
             hst.handle_quiz()
-            break
+            hst.lobby.reset()
+            hst.send_clients()
+            hst.Mscok.close()
+            send_answer(s, "REF")
+            clnt = unpickle_something(s)
+            home_screen = Home(root, "800x300", clnt)
+
 
     print("1")
     print("hkfd")

@@ -86,6 +86,23 @@ class gmr_screens:
 
         self.f = f
 
+    def ending(self, ans):
+        f = tk.Frame(self.root)
+        f.place(relx=0, rely=0)
+        title = tk.Label(f, text="THE END!!!!!!")
+        title.config(font=("Ariel", 18))
+        title.grid(row=1, column=0, sticky="NW")
+        title = tk.Label(f, text="total points: " + ans[0])
+        title.config(font=("Ariel", 18))
+        title.grid(row=2, column=0, sticky="NW")
+        title = tk.Label(f, text="your place:" + ans[3])
+        title.config(font=("Ariel", 18))
+        title.grid(row=3, column=0, sticky="NW")
+        #B = tk.Button(f, text="new game", command=progress)
+        #B.config(font=("Ariel", 18))
+        #B.grid(row=4, column=1, sticky="NW")
+        self.f = f
+
     def validate_click(self,letter):
         self.choice = letter
         self.pressed_click = True

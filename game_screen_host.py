@@ -68,6 +68,36 @@ class hst_screens:
         title.grid(row=5, column=0, sticky="NW")
         self.f = f
 
+    def ending(self,cli_arr):
+        names = ["first", "second", "third"]
+        f = tk.Frame(self.root)
+        f.place(relx=0, rely=0)
+        title = tk.Label(f, text="THE END!!!!!!")
+        title.config(font=("Ariel", 18))
+        title.grid(row=1, column=0, sticky="NW")
+        n = 0
+        n1 = 2
+        for i in names:
+            if n < len(cli_arr):
+                title = tk.Label(f, text=i + ":" + cli_arr[n].name)
+                title.config(font=("Ariel", 18))
+                title.grid(row=n1, column=0, sticky="NW")
+                title = tk.Label(f, text="with:" + str(cli_arr[n].temp.value))
+                title.config(font=("Ariel", 18))
+                title.grid(row=n1 + 1, column=0, sticky="NW")
+                n1 += 2
+                n += 1
+            else:
+                break
+        B = tk.Button(f, text="new game", command=self.cont_quest)
+        B.config(font=("Ariel", 18))
+        B.grid(row=n1 + 1, column=1, sticky="NW")
+
+        self.f =f
+
+
+
+
     def answer(self, ans,cli_arr):
         names = ["first", "second", "third"]
         f = tk.Frame(self.root)
