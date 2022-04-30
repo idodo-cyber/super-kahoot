@@ -4,11 +4,28 @@ import threading
 IP = "0.0.0.0"
 PORT = 55368
 ACTIVEREQ={}
+ACTIVEENC = {}
 lock = threading.Lock()
 import sqlite3
 from Player import player
 import pickle
 from cli_obj import *
+from encrypt import *
+from hast_pack import *
+
+def connect_client(c):
+
+    enc = crypt(c)
+    pickle_something1(enc.publicKey,c)
+    enc_key  = all_mesage_test(c,False)
+    enc.create_aes_server(enc_key)
+    return enc
+
+
+
+def send_bytes1(s,ans):
+    s.send((str(len(ans)) + "_" ).encode() + ans)
+
 def build_answer(ans):#builds apropriate answer according to protocol
     return str(len(ans))+"_"+ans
 def send_bytes(s,what):
@@ -32,7 +49,7 @@ def all_mesage(sock,bytes = False):#recievs all of the message based on the mess
         while not len(ans) == lens:
             ans += sock.recv(lens)
     return ans#recieves the message
-def all_mesage_test(sock,bytes = False):#recievs all of the message based on the message length given at the begining of the messsage
+def all_mesage_test(sock, pickle = True):#recievs all of the message based on the message length given at the begining of the messsage
     print("3")
     lent = sock.recv(1)
     print("4")
@@ -46,14 +63,18 @@ def all_mesage_test(sock,bytes = False):#recievs all of the message based on the
     while not len(ans) == lent:
         ans += sock.recv(lent)
     print(ans)
-    ans = pickle.loads(ans)
+    if pickle:
+        ans = pickle.loads(ans)
     return ans#recieves the message
 
 
 def pickle_something(somth,s):
     msg = pickle.dumps(somth)
-    send_bytes(s, msg)
+    s.send(msg)
 
+def pickle_something1(somth,s):
+    msg = pickle.dumps(somth)
+    send_bytes1(s, msg)
 
 
 
@@ -96,59 +117,103 @@ def login(crsr,name,paswd):
     clnt = player(crsr,name)
     return clnt
 
+def get_quiz(crsr,c,clnt):
+    while True:
+        name = c.recv()
+        crsr.execute('SELECT * FROM quizes WHERE  name = ? ', (name,))
+        data = crsr.fetchall()
+        print(data)
+        index = data[0]
+        index = index[0]
+        limit = data[0]
+        limit = limit[2]
+        if clnt.comp_limit(limit):
+            print("yay")
+            crsr.execute('SELECT content FROM q_and_a WHERE  `index` = ? ', (index,))
+            data = crsr.fetchall()[0]
+            print(data)
+            data = data[0]
+            c.send(data)
+            break
+        else:
+            print("nooo")
+            c.send("no")
+
+
+
+def create_encryption():
+    print("fd")
+
+
+
+
 
 def before_game(c,crsr,connection_login):
     while True:
-
         print("1")
-        txt = all_mesage(c)
+        txt = c.recv()
         print("2")
         if not txt == "new_sign":
             clnt = login(crsr,txt.split("_")[0],txt.split("_")[1])
             temp = temp_cli(txt.split("_")[0],txt.split("_")[1])
             if not clnt == False:
-                send_answer(c,"connected")
+                c.send("connected")
                 return [clnt,temp]
-            send_answer(c, "not_connected")
+            c.send("not_connected")
         else:
-            txt = all_mesage(c)
+            txt = c.recv()
             ans = sign_in(connection_login,crsr,txt.split("_")[0],txt.split("_")[1])
             print(ans)
             if ans == True:
                 clnt = create_player(connection_login,crsr,txt.split("_")[0])
                 temp = temp_cli(txt.split("_")[0], txt.split("_")[1])
-                send_answer(c, "succes")
+                c.send("succes")
                 print("uploaded succefuly")
                 return [clnt,temp]
-            send_answer(c, "not_succes")
+            c.send("not_succes")
 
 def handle(c,addr):#understands what client and assigns command accordingly
+    enc = connect_client(c)
     connection_login = sqlite3.connect("login.db")
     crsr = connection_login.cursor()
-    arr =  before_game(c,crsr,connection_login)
+    arr =  before_game(enc,crsr,connection_login)
     clnt = arr[0]
     temp = arr[1]
-    pickle_something(clnt,c)
+    pickle_something(clnt,enc)
     print(clnt.name)
-    handle_game(connection_login,crsr,c,addr)
+    handle_game(connection_login,crsr,enc,addr,clnt)
     while True:
-        if all_mesage(c) == "REF":
+        if enc.recv() == "REF":
+            print("i need help")
             clnt = login(crsr,temp.name,temp.paswd)
-            pickle_something(clnt, c)
-            handle_game(connection_login, crsr, c, addr)
+            pickle_something(clnt, enc)
+            handle_game(connection_login, crsr, enc, addr,clnt)
 
 
-def handleactive(connection,crsr,c,addr):#assigns an active client a personalized id,and closes connection when finished
+
+
+
+
+def handleactive(connection,crsr,c,addr,clnt):#assigns an active client a personalized id,and closes connection when finished
+
+
     num = random.randint(100000,999999)
     while num in ACTIVEREQ.values():
         num = random.randint(100000, 999999)
     lock.acquire()
     ACTIVEREQ[addr[0]] = num #assigns the client a personalized number code and lists him as an active client
     lock.release()
-    send_answer(c,str((ACTIVEREQ[addr[0]])))#sends the active client his personalized password
+    pack = hpack(ACTIVEREQ[addr[0]])
+    lock.acquire()
+    ACTIVEENC[addr[0]] = pack.fernet  # assigns the client a personalized number code and lists him as an active client
+    lock.release()
+    pickle_something(pack,c)
+    #send_answer(c,str(()))#sends the active client his personalized password
     print(ACTIVEREQ)
     #  txt = all_mesage(c)
-    plyr_lst = all_mesage_test(c,bytes=True)
+    get_quiz(crsr,c,clnt)
+    plyr_lst = c.recv(True)
+    print("almost there")
     print(plyr_lst)
     update(connection,crsr,plyr_lst)
     return
@@ -170,39 +235,72 @@ def findkey(val):
     key_list = list(ACTIVEREQ.keys())
     print(key_list)
     val_list = list(ACTIVEREQ.values())
+    indx = val_list.index(int(val))
     print(val_list)
-    return key_list[val_list.index(int(val))]
+    key_list1 = list(ACTIVEENC.keys())
+    print(key_list)
+    val_list1 = list(ACTIVEENC.values())
+    return key_list[indx],val_list1[indx]
 
 
 
 def handlepasive(c):#sends to the passive client the ip address of the active client with the desired number
-    param = all_mesage(c)
+    param = c.recv()
     print(param)
     lock.acquire()
     try:
 
-        saddr = findkey(param)#finds the corresponding ip for the num
+        saddr,fernet= findkey(param)#finds the corresponding ip for the num
+        saddr = hpack(saddr,fernet)
+        pickle_something(saddr,c)
 
     except:
         saddr = "no"
+        c.send(saddr)
     lock.release()
-    send_answer(c,saddr)
+
     print(saddr)
 
 
 
 
+def add_quiz(connection,crsr,quiz):
+    crsr.execute('INSERT INTO quizes (name,"limit")  VALUES (?, ?);', (quiz.name, quiz.limit))
+    crsr.execute('INSERT INTO q_and_a (content)  VALUES (?);',(quiz.file_cont,))
+    connection.commit()
+
+
+def handle_quiz(connection,crsr,enc,clnt):
+    while True:
+        quz = enc.recv(True)
+        lim = quz.limit
+        if not lim == "":
+
+            try:
+               lim1 =  lim.split("_")
+               if not lim1[0] in ["points","num_firsts","win_rate"]:
+                    raise
+               if not clnt.comp_limit(lim):
+                   raise
+               break
+            except:
+                enc.send("no")
+    print(quz.file_cont)
+    add_quiz(connection,crsr,quz)
 
 
 
 
 
-def handle_game(connection,crsr,c,addr):#understands what client and assigns command accordingly
-    txt = all_mesage(c)
+def handle_game(connection,crsr,c,addr,clnt):#understands what client and assigns command accordingly
+    txt = c.recv()
     if txt == "hello":
-        handleactive(connection,crsr,c,addr)
+        handleactive(connection,crsr,c,addr,clnt)
     elif txt == "please":
         handlepasive(c)
+    else:
+        handle_quiz(connection,crsr,c,clnt)
+
 
 
 

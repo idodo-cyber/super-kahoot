@@ -1,15 +1,15 @@
 import threading
 import pickle
 from datetime import datetime
-
+from encrypt import *
 from game_screen_gamer import *
 import socket
 class gamer:
-    def __init__(self,sock,root,geometry,home_screen):
+    def __init__(self,enc,root,geometry,home_screen):
         self.home_screen = home_screen
         self.root = root
         self.geometry = geometry
-        self.src_sock = sock
+        self.src_enc = enc
         self.SPORT = 55368
         self.MPORT = 53476
         self.PROG1 = 0
@@ -33,11 +33,11 @@ class gamer:
             if not gmr.pin == 0:
                 break
         print(gmr.pin)
-        self.send_answer1("please")
-        self.send_answer1(gmr.pin)
-        addr = self.all_mesage(self.src_sock)
-        print(addr)
-        self.Haddres= addr
+        self.src_enc.send("please")
+        self.src_enc.send(gmr.pin)
+        pack= self.src_enc.recv(True)
+        self.Haddres= pack.pin
+        self.src_enc.game_fernet = pack.fernet
         self.gmr = gmr
     def send_answer1(self,ans):
         self.src_sock.send((str(len(ans)) + "_" + ans).encode())
@@ -45,13 +45,14 @@ class gamer:
         self.Hsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.client = clnt
         self.Hsock.connect((self.Haddres, self.MPORT))
+        self.henc = game_crypt(self.Hsock, self.src_enc.game_fernet)
         self.pickle_something(self.client)
-        if self.all_mesage(self.Hsock) == "good":
+        if self.henc.recv() == "good":
             self.gmr.waiting()
     def play_game(self):
         ans = ""
         while not ans == "STP":
-            ans = self.all_mesage(self.Hsock)
+            ans = self.henc.recv()
             if ans == "STRT":
                 self.STRT_TIME = datetime.now()
                 self.gmr.answer_screen()
@@ -63,18 +64,21 @@ class gamer:
                         self.gmr.pressed_click = False
                         answer = self.build_ans(self.gmr.choice)
                         #print(answer)
-                        self.send_answer(answer)
+                        self.henc.send(answer)
                         break
                     elif execution_time > 20000:
                         break
                 self.gmr.waiting()
-                point = self.all_mesage(self.Hsock).split("_")
+                point = self.henc.recv().split("_")
                 self.gmr.reset()
                 print(point)
                 self.gmr.between(point)
         print("congrats u finished game")
         self.gmr.resety()
-        self.gmr.ending( point)
+        self.gmr.ending(point)
+        self.henc.recv()
+        print("help please")
+
 
 
 
@@ -96,16 +100,14 @@ class gamer:
             print(ans)
         return ans
 
+
+
     def pickle_something(self,somth):
         msg = pickle.dumps(somth)
-        self.send_bytes(msg)
-
-    def send_bytes(self, what):
-        self.send_answer( str(len(what)))
-        self.Hsock.send(what)
+        self.henc.send(msg)
 
     def send_answer(self, ans):
-        self.Hsock.send((self.build_answer(ans)).encode())
+        self.henc.send(ans)
 
     def build_answer(self,ans):  # builds apropriate answer according to protocol
         return str(len(ans)) + "_" + ans

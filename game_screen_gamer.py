@@ -92,7 +92,7 @@ class gmr_screens:
         title = tk.Label(f, text="THE END!!!!!!")
         title.config(font=("Ariel", 18))
         title.grid(row=1, column=0, sticky="NW")
-        title = tk.Label(f, text="total points: " + ans[0])
+        title = tk.Label(f, text="total points: " + ans[2])
         title.config(font=("Ariel", 18))
         title.grid(row=2, column=0, sticky="NW")
         title = tk.Label(f, text="your place:" + ans[3])

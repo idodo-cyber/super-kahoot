@@ -25,6 +25,11 @@ class player:
         if indx<3:
                 self.top_3_rate = (self.top_3_rate + 1)
 
+    def comp_limit(self,limit):
+        limit = limit.split("_")
+        dict = {"points":self.points,"win_rate":self.top_3_rate,"num_first":self.top_3_rate}
+        return dict[limit[0]]>= int(limit[1])
+
 
     def to_string(self):
         return str(self.points) + "*" + str(self.num_firsts) + "*" + str(self.top_3_rate) + "*" + str(self.games)

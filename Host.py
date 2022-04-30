@@ -3,13 +3,15 @@ import socket
 import threading
 import pickle
 from game_screen_host import *
+from quiz_choice import *
+from encrypt import *
 class host:
-    def __init__(self,sock,root,geometry,home_screen):
+    def __init__(self,enc,root,geometry,home_screen):
         self.lock = threading.Lock()
         self.home_screen = home_screen
         self.root = root
         self.geometry = geometry
-        self.src_sock = sock
+        self.src_enc = enc
         self.SPORT = 55368
         self.MPORT = 53476
         self.PROG1 = 0
@@ -38,10 +40,36 @@ class host:
             #else:
              #   root.destroy()
 
+
+
+
+
     def get_pin(self):  # recieves game pin from server
-        self.src_sock.send((str(len("hello")) + "_" + "hello").encode())
-        msg = self.all_mesage(self.src_sock)
-        self.pin = msg
+        self.src_enc.send(("hello").encode())
+        msg = self.src_enc.recv(True)
+        self.pin = msg.pin
+        self.src_enc.game_fernet = msg.fernet
+
+    def handle_quiz_choice(self):
+        chs = choice(self.root, self.geometry,self.home_screen)
+        while True:
+            while True:
+                if chs.pressed:
+                    print(chs.name)
+                    chs.pressed = False
+                    break
+            self.src_enc.send(chs.name)
+            content = self.src_enc.recv()
+            if not content == "no":
+                # Reading from file
+                with open("demo_quiz", "w") as file1:
+                    # Writing data to a file
+                    file1.write(content)
+                    break
+            else:
+                chs.not_good()
+
+
 
     def handle_lobby(self):
         self.lobby = hst_screens(self.root, self.geometry,self.pin,self.home_screen)
@@ -52,6 +80,7 @@ class host:
         while var < self.PLAYER_NUM:  # two clients needs to change to infinit aith timeouts
             self.Mscok.listen()
             c, addr = self.Mscok.accept()
+            c = game_crypt(c,self.src_enc.game_fernet)
             thread = threading.Thread(target=self.connect_client, args=(c, self.root, self.pin))  # creates new thread for client
             thread.start()
             arr.append(thread)
@@ -67,15 +96,12 @@ class host:
 
 
     def send_to_player(self,plyr,msg):
-        plyr.temp.socket.send(self.build_answer(msg).encode())
+        plyr.temp.socket.send(msg)
 
     def pickle_something(self, somth):
         msg = pickle.dumps(somth)
         #self.src_sock.send(str(len(msg)).encode())
-        ln = len(msg)
-        ans = (str(ln) + "_").encode() +  msg
-        print(ans)
-        self.src_sock.send(ans)
+        self.src_enc.send(msg)
         print("sent")
 
     def build_answer(self,ans):  # builds apropriate answer according to protocol
@@ -92,12 +118,12 @@ class host:
 
     def connect_client(self,c, root, pin):  # connects client and sets him up with the clients nickname
         global CRNT_FRM
-        clnt = self.all_mesage(c,bytes=True)
+        clnt = c.recv(pickled=True)
         clnt.temp = Temp(clnt.name, c)
         self.lock.acquire()
         self.CLINET_ARR.append(clnt)
         self.lock.release()
-        c.send(self.build_answer("good").encode())
+        c.send("good")
         print(self.CLINET_ARR)
         #reset(CRNT_FRM)
         #CRNT_FRM = opening2(root, pin)
@@ -115,7 +141,7 @@ class host:
             self.lobby.reset()
             self.lobby.question( num, quest, arr1)
             print(first_lines)
-            while not first_lines == [""]:
+            while not "@_end_@" in first_lines:
                 for i in first_lines:
                     if "_T" in i:
                         ans = i.split("_")
@@ -145,20 +171,29 @@ class host:
                         self.lobby.quest_button = False
                         break
                 first_lines = "".join([file.readline() for _ in range(5)]).split("\n")
-                if not first_lines == [""]:
+                print(first_lines)
+                if not "@_end_@" in first_lines:
                     num += 1
                     quest = first_lines[0]
                     arr1 = self.split_lines(first_lines[1:])
                     self.lobby.resety()
                     CRNT_FRM = self.lobby.question( num, quest, arr1)
-            for i in self.CLINET_ARR:
-                i.temp.end_client()
-            self.lobby.resety()
-            self.lobby.ending(self.CLINET_ARR)
-            while True:
-                if self.lobby.quest_button:
-                    self.lobby.quest_button = False
-                    break
+
+
+
+    def end_client(self):
+        for i in self.CLINET_ARR:
+            i.temp.stop_client()
+        self.lobby.resety()
+        self.lobby.ending(self.CLINET_ARR)
+        while True:
+            if self.lobby.quest_button:
+                self.lobby.quest_button = False
+                for i in self.CLINET_ARR:
+                    i.temp.end_client()
+                    i.temp.socket.sock.close()
+                break
+
 
 
     def split_lines(self,frst):

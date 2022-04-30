@@ -21,15 +21,19 @@ class Temp:
         self.added_value = add
 
     def strt_classes(self):
-        self.socket.settimeout(20)
-        self.socket.send((str(len("STRT")) + "_" + "STRT").encode())
+        self.socket.sock.settimeout(20)
+        self.socket.send("STRT")
 
     def end_client(self):
-        self.socket.send((str(len("STP")) + "_" + "STP").encode())
-        self.socket.close()
+        self.socket.send( "bye")
+
+    def stop_client(self):
+        self.socket.send( "STP")
+
 
     def recv_ans(self):
-        ans = all_mesage(self.socket)
+        self.socket.sock.settimeout(200000)
+        ans = self.socket.recv()
         print(ans)
         ans = ans.split("_")
         try:
@@ -43,7 +47,7 @@ class Temp:
 
 def all_mesage(sock):  # recievs all of the message based on the message length given at the begining of the messsage
     try:
-        sock.settimeout(20)
+        sock.settimeout(200000)
         lent = sock.recv(1).decode()
         while "_" not in lent:
             lent += sock.recv(1).decode()

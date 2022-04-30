@@ -8,6 +8,9 @@ from Player import player
 from Home import *
 from Host import *
 from Gamer import *
+from upload_screen import *
+from quiz import *
+from encrypt import *
 SIP = "127.0.0.1"
 SPORT = 55368
 MPORT = 53476
@@ -30,11 +33,11 @@ def before_game(root,s):
     while True:
         if screen1.pressed_login2:
             print("1")
-            send_answer(s, str(screen1.name) + "_" + str(screen1.passwrd))
+            s.send(str(screen1.name) + "_" + str(screen1.passwrd))
             print("2")
             screen1.pressed = False
             screen1.pressed_login2 = False
-            ans = all_mesage(s)
+            ans = s.recv()
             print(ans)
             if ans == "connected":
                 print("woodooo")
@@ -50,9 +53,9 @@ def before_game(root,s):
                 if screen1.pressed_signup:
                     print("help")
                     screen1.pressed_signup = False
-                    send_answer(s, "new_sign")  # continue
-                    send_answer(s, str(screen1.name) + "_" + str(screen1.passwrd))
-                    if all_mesage(s) == "succes":
+                    s.send("new_sign")  # continue
+                    s.send(str(screen1.name) + "_" + str(screen1.passwrd))
+                    if s.recv() == "succes":
                         print("succefully signed up")
                         stat = True
                         break
@@ -69,7 +72,7 @@ def before_game(root,s):
 
 
 def unpickle_something(s):
-    return all_mesage(s,True)
+    return s.recv(True)
 
 
 def build_answer(ans):#builds apropriate answer according to protocol
@@ -79,12 +82,20 @@ def build_answer(ans):#builds apropriate answer according to protocol
 
 
 
+def pickle_something(s, somth):
+    msg = pickle.dumps(somth)
+    s.send(msg)
+    print("sent")
+
 
 
 
 
 def send_answer(s,ans):
     s.send((build_answer(ans)).encode())
+
+def send_bytes(s,ans):
+    s.send((str(len(ans)) + "_" ).encode() + ans)
 
 
 def all_mesage(sock,bytes = False):#recievs all of the message based on the message length given at the begining of the messsage
@@ -106,42 +117,113 @@ def all_mesage(sock,bytes = False):#recievs all of the message based on the mess
 
     return ans#recieves the message
 
+def all_mesage_test(sock, pickled=True):  # recievs all of the message based on the message length given at the begining of the messsage
+    print("3")
+    lent = sock.recv(1)
+    print("4")
+    print(lent)
+    print(lent.decode())
+    while "_".encode() not in lent:
+        lent += sock.recv(1)
+    lent = int(lent[:-1])  # recives the message length
+    print(lent)
+    ans = sock.recv(lent)
+    while not len(ans) == lent:
+        ans += sock.recv(lent)
+    print(ans)
+    if pickled:
+        ans = pickle.loads(ans)
+    return ans  # recieves the message
+
+
+def connect_server(c):
+    pubkey = all_mesage_test(c,True)
+    enc = crypt(c)
+    enc.create_aes_client()
+    key_enc = enc.encrypt_rsa_client(enc.aes_key,pubkey)
+    send_bytes(c,key_enc)
+    return enc
+
 
 def client(root):
     global CRNT_FRM
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((SIP, SPORT))
-    before_game(root,s)
+    enc = connect_server(s)
+    before_game(root,enc)
     print("enters game")
-    clnt = unpickle_something(s)
+    clnt = unpickle_something(enc)
     home_screen = Home(root, "800x300", clnt)
     while True:
 
         if home_screen.play:
             print("player succes")
             home_screen.play = False
-            gmr = gamer(s,root,"800x300",home_screen)
+            gmr = gamer(enc,root,"800x300",home_screen)
             gmr.get_addr(0)
             gmr.cnct_client(clnt)
             print(gmr.Haddres)
             gmr.play_game()
-            gmr.Hsock.close()
-            send_answer(s, "REF")
-            clnt = unpickle_something(s)
+            gmr.henc.sock.close()
+            enc.send("REF")
+            print("sdfsdf")
+            clnt = enc.recv(True)
             home_screen = Home(root, "800x300", clnt)
 
         elif home_screen.host:
             home_screen.host = False
-            hst = host(s,root,"800x300",home_screen)
+            hst = host(enc,root,"800x300",home_screen)
             print(hst.pin)
+            hst.handle_quiz_choice()
+
+
             hst.handle_lobby()
             hst.handle_quiz()
-            hst.lobby.reset()
+            print("1")
             hst.send_clients()
+
+            hst.lobby.reset()
+            print("2")
+            hst.end_client()
+            print("3")
             hst.Mscok.close()
-            send_answer(s, "REF")
-            clnt = unpickle_something(s)
+            print("4")
+            enc.send("REF")
+            print("fdfdgf")
+            clnt = enc.recv(True)
             home_screen = Home(root, "800x300", clnt)
+
+
+
+        elif home_screen.upload:
+            home_screen.upload = False
+            print("hihh")
+            upld = upld_screen(root,home_screen)
+            while True:
+                if upld.next:
+                    upld.next_stage()
+                    upld.next = False
+                    while True:
+                        if upld.pressed_signup:
+                            print(upld.name)
+                            print(upld.limit)
+                            upld.pressed_signup = False
+                            quz = Quiz(upld.name,upld.file_cont)
+                            if not upld.limit == "":
+                                quz.insert_limit(upld.limit)
+                            enc.send("quiz")
+                            pickle_something(enc,quz)
+                            print("sent quiz")
+                            damp = enc.recv()
+                            if not damp  == "no":
+                                print("succes")
+                                break
+                            else:
+                                print("nope")
+
+
+
+
 
 
     print("1")

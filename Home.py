@@ -23,10 +23,13 @@ class Home:
         self.play = True
     def vali_host(self):
         self.host = True
+    def vali_upload(self):
+        self.upload = True
 
     def __init__(self, root, geometry,player):
         self.play = False
         self.host = False
+        self.upload = False
         self.root = root
         self.resety()
         self.geometry = geometry
@@ -37,6 +40,7 @@ class Home:
         Label(self.root, text="your stats:").grid(row=5, column=5)
         self.table_create()
         host = Button(self.root, text="host", command=self.vali_host).grid(row=20, column=20)
+        upload_button = Button(self.root, text="upload", command=self.vali_upload).grid(row=25, column=25)
 
 
         player = Button(self.root, text="play", command=self.vali_player).grid(row=25, column=20)
