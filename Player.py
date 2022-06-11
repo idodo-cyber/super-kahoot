@@ -6,7 +6,7 @@ class player:
         data = crsr.fetchall()
         data = data[0]
         self.index = data[2]
-        print(self.index)
+
         crsr.execute('SELECT * FROM clients_info WHERE `index` = ?',(self.index,))
         data = crsr.fetchall()
         data = data[0]
@@ -15,15 +15,22 @@ class player:
         self.top_3_rate = data[3]
         self.games =data[4]
         self.temp = None
-        print(data)
+
 
     def update(self,indx):
+        print(self.name + " " + str(self.games) + " " + str(self.top_3_rate) + " " + str(indx))
         self.points = self.points + self.temp.value
         self.games = self.games+1
         if indx  == 0:
             self.num_firsts = self.num_firsts +1
-        if indx<3:
-                self.top_3_rate = (self.top_3_rate + 1)
+        if (indx+1)<0 and self.games>1:
+                self.top_3_rate = round((((self.top_3_rate*(self.games-1))+1)/self.games),2)
+        elif (indx+1)<0 and self.games==1:
+            self.top_3_rate = 1
+        if (indx+1)>=0 and self.games>1:
+                self.top_3_rate = round((((self.top_3_rate*(self.games-1)))/self.games),2)
+
+        print(self.name + " " + str(self.games)+ " " + str(self.top_3_rate) +  " " + str(indx))
 
     def comp_limit(self,limit):
         limit = limit.split("_")

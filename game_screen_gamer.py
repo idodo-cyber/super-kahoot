@@ -18,12 +18,22 @@ class gmr_screens:
         validate_pin1 = partial(self.validate_pin,self.given_pin)
         loginButton = tk.Button(self.root, text="pin", command=validate_pin1).grid(row=6, column=0)
         self.f = f
+        self.home = False
 
 
     def validate_pin(self, pin1):
         self.pin = pin1.get()
         return
 
+    def new_pin(self):
+        self.resety()
+        n = 0
+        tk.Label(self.root, text="pin incorrect please try again").grid(row=n + 2, column=0)
+        pinlabel = tk.Label(self.root, text="Password").grid(row=n + 2, column=0)
+        self.given_pin = tk.StringVar()
+        pinentry = tk.Entry(self.root, textvariable=self.given_pin).grid(row=n + 2, column=1)
+        validate_pin1 = partial(self.validate_pin, self.given_pin)
+        loginButton = tk.Button(self.root, text="pin", command=validate_pin1).grid(row=7, column=0)
     def reset(self):
         self.f.destroy()
 
@@ -65,7 +75,6 @@ class gmr_screens:
         global CRNT_FRM
         f = tk.Frame(self.root)
         f.place(relx=0, rely=0)
-        print(arr[1])
         if not arr[2] == "0":
             title = tk.Label(f, text="congrats!!!!")
             title.config(font=("Ariel", 18))
@@ -92,7 +101,7 @@ class gmr_screens:
         title = tk.Label(f, text="THE END!!!!!!")
         title.config(font=("Ariel", 18))
         title.grid(row=1, column=0, sticky="NW")
-        title = tk.Label(f, text="total points: " + ans[2])
+        title = tk.Label(f, text="total points: " + ans[1])
         title.config(font=("Ariel", 18))
         title.grid(row=2, column=0, sticky="NW")
         title = tk.Label(f, text="your place:" + ans[3])
@@ -102,6 +111,25 @@ class gmr_screens:
         #B.config(font=("Ariel", 18))
         #B.grid(row=4, column=1, sticky="NW")
         self.f = f
+    def error(self):
+        self.resety()
+        f = tk.Frame(self.root)
+        f.place(relx=0, rely=0)
+        title = tk.Label(f, text="host crashed")
+        title.config(font=("Ariel", 18))
+        title.grid(row=0, column=0, sticky="NW")
+        title = tk.Label(f, text="the game is over :(")
+        title.config(font=("Ariel", 18))
+        title.grid(row=1, column=0, sticky="NW")
+        title = tk.Label(f, text="you can return to home screen if you'd like")
+        title.config(font=("Ariel", 18))
+        title.grid(row=3, column=0, sticky="NW")
+        ref_button = tk.Button(f, text="return home", command=self.home_ret)
+        ref_button.config(font=("Ariel", 18))
+        ref_button.grid(row=5, column=5, sticky="NW")
+
+    def home_ret(self):
+        self.home =True
 
     def validate_click(self,letter):
         self.choice = letter

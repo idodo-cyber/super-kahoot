@@ -12,14 +12,26 @@ class choice:
         usernameLabel = Label(self.root, text="quiz name").grid(row=0, column=0)
         self.given_name = StringVar()
         usernameEntry = Entry(self.root, textvariable=self.given_name).grid(row=0, column=1)
+        usernameLabel = Label(self.root, text="number of players").grid(row=0, column=2)
+        self.given_num = StringVar()
+        usernameEntry = Entry(self.root, textvariable=self.given_num).grid(row=0, column=3)
 
         # password label and password entry box
-        validate_login1 = partial(self.validate_signup1, self.given_name)
+        validate_login1 = partial(self.validate_signup1, self.given_name,self.given_num)
         loginButton = Button(self.root, text="enter", command=validate_login1).grid(row=6, column=0)
-    def validate_signup1(self, username1):
+
+
+
+    def validate_signup1(self, username1,num):
         self.name = username1.get()
+        self.num = num.get()
         self.pressed = True
+
         return
+
+
+
+
     def not_good(self):
         self.resety()
         self.root.title("begining")
@@ -30,6 +42,13 @@ class choice:
 
         # password label and password entry box
         validate_login1 = partial(self.validate_signup1, self.given_name)
+        usernameLabel = Label(self.root, text="number of players").grid(row=0, column=2)
+        self.given_num = StringVar()
+        usernameEntry = Entry(self.root, textvariable=self.given_num).grid(row=0, column=3)
+
+        # password label and password entry box
+        validate_login1 = partial(self.validate_signup1, self.given_name, self.given_num)
+
         loginButton = Button(self.root, text="enter", command=validate_login1).grid(row=6, column=0)
         not_good = Label(self.root, text="could not access quiz").grid(row=10, column=5)
 

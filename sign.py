@@ -7,7 +7,7 @@ class Sign:
         self.name = username1.get()
         self.passwrd = password.get()
         self.pressed_login2 = True
-        #print("hello")
+
         return
     def sign_up_cmnd(self):
         self.pressed_signup1 = True

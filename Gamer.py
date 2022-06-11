@@ -25,19 +25,27 @@ class gamer:
         self.STAT = 0
         self.PLAYER_NUM = 3
     def get_addr(self,var):
-        if var == 0:
-            gmr = gmr_screens(self.root,self.geometry,self.home_screen)
-        else:
-            CRNT_FRM, ans = opening2(root)
+        gmr = gmr_screens(self.root,self.geometry,self.home_screen)
         while True:
             if not gmr.pin == 0:
+
                 break
-        print(gmr.pin)
         self.src_enc.send("please")
-        self.src_enc.send(gmr.pin)
-        pack= self.src_enc.recv(True)
-        self.Haddres= pack.pin
-        self.src_enc.game_fernet = pack.fernet
+        self.src_enc.send(gmr.pin)#sends game pin
+        pack= self.src_enc.recv(True)#recieves answer
+        gmr.pin = 0
+        if pack == b"no":
+            while pack == b"no":
+                gmr.new_pin()
+                while True:
+                    if not gmr.pin == 0:
+                        break
+                self.src_enc.send("please")
+                self.src_enc.send(gmr.pin)
+                pack = self.src_enc.recv(True)
+
+        self.Haddres= pack.pin#assigns host adress
+        self.src_enc.game_fernet = pack.fernet#assigns encryption object
         self.gmr = gmr
     def send_answer1(self,ans):
         self.src_sock.send((str(len(ans)) + "_" + ans).encode())
@@ -53,6 +61,8 @@ class gamer:
         ans = ""
         while not ans == "STP":
             ans = self.henc.recv()
+            if ans == "ERR":
+                raise
             if ans == "STRT":
                 self.STRT_TIME = datetime.now()
                 self.gmr.answer_screen()
@@ -63,7 +73,7 @@ class gamer:
                     if self.gmr.pressed_click:
                         self.gmr.pressed_click = False
                         answer = self.build_ans(self.gmr.choice)
-                        #print(answer)
+
                         self.henc.send(answer)
                         break
                     elif execution_time > 20000:
@@ -71,13 +81,10 @@ class gamer:
                 self.gmr.waiting()
                 point = self.henc.recv().split("_")
                 self.gmr.reset()
-                print(point)
                 self.gmr.between(point)
-        print("congrats u finished game")
         self.gmr.resety()
         self.gmr.ending(point)
         self.henc.recv()
-        print("help please")
 
 
 
@@ -97,7 +104,7 @@ class gamer:
                 ans += sock.recv(4096)
 
             ans = pickle.loads(ans)
-            print(ans)
+
         return ans
 
 
@@ -118,7 +125,6 @@ class gamer:
         time_diff = (end_time - start_time)
         execution_time = time_diff.total_seconds() * 1000
         exe = int(execution_time)
-        print(exe)
         ans = self.build_answer(ans + "_" + str(exe))  # builds the answer based on protocol len_ans_time
         return ans
 

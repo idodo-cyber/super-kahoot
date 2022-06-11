@@ -35,31 +35,32 @@ class crypt:
         leng = len(message)
         self.sock.send((str(leng) + "_").encode() + message)
 
+
+
     def recv(self,pickled=False):  # recievs all of the message based on the message length given at the begining of the messsage
-        print("3")
+
         lent = self.sock.recv(1)
-        print("4")
-        print(lent)
-        print(lent.decode())
+
         while "_".encode() not in lent:
             lent += self.sock.recv(1)
         lent = int(lent[:-1])  # recives the message length
-        print(lent)
+
         ans = self.sock.recv(lent)
         while not len(ans) == lent:
             ans += self.sock.recv(lent)
-        print(ans)
+
         while True:
             if pickled:
-                #try:
+                try:
                     msg =  self.decrypt_message(ans)
                     msg = pickle.loads(msg)
                     return msg
-                #except:
-                    pickled = False
+                except:
+                    return msg
             else:
                 ans = self.decrypt_message(ans).decode()
                 break
+
         return ans  # recieves the message
 
 

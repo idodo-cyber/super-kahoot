@@ -29,12 +29,13 @@ class Temp:
 
     def stop_client(self):
         self.socket.send( "STP")
-
+    def send_eror(self):
+        self.socket.send("ERR")
 
     def recv_ans(self):
-        self.socket.sock.settimeout(200000)
+        self.socket.sock.settimeout(20)
         ans = self.socket.recv()
-        print(ans)
+
         ans = ans.split("_")
         try:
             return ans[1], ans[2]
@@ -51,10 +52,10 @@ def all_mesage(sock):  # recievs all of the message based on the message length 
         lent = sock.recv(1).decode()
         while "_" not in lent:
             lent += sock.recv(1).decode()
-        print(lent)
+
         lent = lent[:-1]  # recives the message length
         ans = sock.recv(int(lent)).decode()
-        print(ans)
+
         while not len(ans) == int(lent):
             ans += sock.recv(lent)
     except:

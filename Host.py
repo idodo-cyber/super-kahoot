@@ -25,20 +25,9 @@ class host:
         self.PROG = 0
         self.QUESTNUM = 5
         self.STAT = 0
-        self.PLAYER_NUM = 1
+        self.PLAYER_NUM = 2
         self.get_pin()  # gets pin
-        #except:
-         #   resety(root)
-         #   error(root)
-          #  while True:
-           #     if not PROG == 0:
-            #        break
-            #if PROG == 1:
-             #   resety(root)
-              #  Kahoot.STAT = 0
-               # Kahoot.start(root)
-            #else:
-             #   root.destroy()
+
 
 
 
@@ -55,7 +44,6 @@ class host:
         while True:
             while True:
                 if chs.pressed:
-                    print(chs.name)
                     chs.pressed = False
                     break
             self.src_enc.send(chs.name)
@@ -65,6 +53,7 @@ class host:
                 with open("demo_quiz", "w") as file1:
                     # Writing data to a file
                     file1.write(content)
+                    self.PLAYER_NUM = int(chs.num)
                     break
             else:
                 chs.not_good()
@@ -87,11 +76,10 @@ class host:
             var += 1
         for i in arr:
             i.join()  # waits until all clients are connected an set
-        print("all are connected")
-        self.lobby.cont_button()
         while True:
             if self.lobby.cont:
                 break
+
 
 
 
@@ -102,7 +90,7 @@ class host:
         msg = pickle.dumps(somth)
         #self.src_sock.send(str(len(msg)).encode())
         self.src_enc.send(msg)
-        print("sent")
+
 
     def build_answer(self,ans):  # builds apropriate answer according to protocol
         return str(len(ans)) + "_" + ans
@@ -112,7 +100,6 @@ class host:
         self.src_sock.send(what)
 
     def send_answer(self, ans):
-        print((self.build_answer(ans)).encode('utf-8').strip())
         self.src_sock.send((self.build_answer(ans)).encode('utf-8').strip())
 
 
@@ -124,7 +111,8 @@ class host:
         self.CLINET_ARR.append(clnt)
         self.lock.release()
         c.send("good")
-        print(self.CLINET_ARR)
+
+        self.lobby.update_lobby(self.CLINET_ARR,self.PLAYER_NUM)
         #reset(CRNT_FRM)
         #CRNT_FRM = opening2(root, pin)
         #lock.release()
@@ -140,7 +128,7 @@ class host:
             arr1 = self.split_lines(first_lines[1:])
             self.lobby.reset()
             self.lobby.question( num, quest, arr1)
-            print(first_lines)
+
             while not "@_end_@" in first_lines:
                 for i in first_lines:
                     if "_T" in i:
@@ -157,12 +145,14 @@ class host:
                         for i in self.CLINET_ARR:
                             try:
                                 voop = str(i.temp.value)+ "_" + str(i.temp.added_value) + "_" + str(self.CLINET_ARR.index(i) + 1)
-                                print(voop)
+
                                 self.send_to_player(i,self.build_answer(voop))
                                     # sends the value,added value and place of client to client to the client
                             except:
                                 self.PLAYER_NUM = self.PLAYER_NUM - 1
                                 self.CLINET_ARR.remove(i)
+                                if self.PLAYER_NUM == 0:
+                                    raise
 
                 self.lobby.reset()
                 self.lobby.answer(ans[1],self.CLINET_ARR)
@@ -171,7 +161,7 @@ class host:
                         self.lobby.quest_button = False
                         break
                 first_lines = "".join([file.readline() for _ in range(5)]).split("\n")
-                print(first_lines)
+
                 if not "@_end_@" in first_lines:
                     num += 1
                     quest = first_lines[0]
@@ -181,7 +171,7 @@ class host:
 
 
 
-    def end_client(self):
+    def end_client(self,ERR = False):
         for i in self.CLINET_ARR:
             i.temp.stop_client()
         self.lobby.resety()
@@ -190,8 +180,12 @@ class host:
             if self.lobby.quest_button:
                 self.lobby.quest_button = False
                 for i in self.CLINET_ARR:
-                    i.temp.end_client()
-                    i.temp.socket.sock.close()
+                    if not ERR:
+                        i.temp.end_client()
+                        i.temp.socket.sock.close()
+                    else:
+                        i.temp.send_eror()
+                        i.temp.socket.sock.close()
                 break
 
 
@@ -216,11 +210,9 @@ class host:
         self.out_dict = {}
         n=0
         for i in self.CLINET_ARR:
-            print(i.top_3_rate)
+
             i.update(n)
-            print(i.top_3_rate)
-            print(i.name)
-            print(i.games)
+
             self.out_dict[i.name] = i.to_string()
             n=n+1
 
@@ -237,8 +229,8 @@ class host:
         try:
             cli.strt_classes()  # sends start message to client
             ans,time = cli.recv_ans()
-            print(ans)
-            print(time)# recieves answer and time it tokk to answer from client
+
+            # recieves answer and time it tokk to answer from client
             if ans == true:  # if answer is correct adds the corresponding value
                 val = 1 - (int(time) / self.ANS_TIME / 2)
                 val = int(val * self.ANS_WORTH)
@@ -248,6 +240,7 @@ class host:
             cli.Set_added_value(val)
         except:
             cli.add_value(0)
+            cli.Set_added_value(0)
 
     def all_mesage(self,sock,bytes=False):  # recievs all of the message based on the message length given at the begining of the messsage
         lent = sock.recv(1).decode()
@@ -264,7 +257,7 @@ class host:
                 ans += sock.recv(4096)
 
             ans = pickle.loads(ans)
-            print(ans)
+
 
         return ans  # recieves the message
     def build_answer(self,ans):  # builds apropriate answer according to protocol
