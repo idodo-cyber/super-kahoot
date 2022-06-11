@@ -173,11 +173,15 @@ def client(root):
 
                     try:
                         gmr.play_game()
+
+                    except ValueError:
+                        gmr.henc.sock.close()
                     except:
                         gmr.gmr.error()
                         while True:
                             if gmr.gmr.home:
                                 break
+
                     gmr.henc.sock.close()
                     enc.send("REF")
                     break
@@ -197,12 +201,24 @@ def client(root):
 
                         try:
                             hst.send_clients()
-                        except:
+                        except Exception as ex:
+
+                            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+
+                            message = template.format(type(ex).__name__, ex.args)
+
+                            print(message)
                             hst.end_client(ERR = True)
                         hst.lobby.reset()
 
                         hst.end_client()
-                    except:
+                    except Exception as ex:
+
+                        template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+
+                        message = template.format(type(ex).__name__, ex.args)
+
+                        print(message)
                         hst.lobby.no_player()
                         while True:
                             if hst.lobby.home:

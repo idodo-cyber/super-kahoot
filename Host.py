@@ -139,6 +139,7 @@ class host:
                                                       args=(ans[1], cli.temp))  # creates new thread for client
                             thread.start()
                             arr.append(thread)
+
                         for thr in arr:
                             thr.join()  # waits until all clients are finished
                         self.CLINET_ARR.sort(key=lambda x: x.temp.value, reverse=True)  # sorts the clients based on their value

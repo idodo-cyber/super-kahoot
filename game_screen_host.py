@@ -155,9 +155,7 @@ class hst_screens:
         title = tk.Label(self.f, text="people who have connected are:")
         title.config(font=("Ariel", 18))
         title.grid(row=3, column=0, sticky="NW")
-        ref_button = tk.Button(self.f, text="REFRESH", command=self.refresh)
-        ref_button.config(font=("Ariel", 18))
-        ref_button.grid(row=5, column=5, sticky="NW")
+        
         n = 0
         n1 = 6
         for i in arr:
@@ -199,7 +197,7 @@ class hst_screens:
                 break
         B = tk.Button(f, text="continue", command=self.cont_quest)
         B.config(font=("Ariel", 18))
-        B.grid(row=5, column=0, sticky="NW")
+        B.grid(row=n1+1, column=0, sticky="NW")
 
     def cont_quest(self):
         self.quest_button = True

@@ -23,11 +23,11 @@ class player:
         self.games = self.games+1
         if indx  == 0:
             self.num_firsts = self.num_firsts +1
-        if (indx+1)<0 and self.games>1:
+        if (indx+1)<4 and self.games>1:
                 self.top_3_rate = round((((self.top_3_rate*(self.games-1))+1)/self.games),2)
-        elif (indx+1)<0 and self.games==1:
+        elif (indx+1)<4 and self.games==1:
             self.top_3_rate = 1
-        if (indx+1)>=0 and self.games>1:
+        if (indx+1)>=4 and self.games>1:
                 self.top_3_rate = round((((self.top_3_rate*(self.games-1)))/self.games),2)
 
         print(self.name + " " + str(self.games)+ " " + str(self.top_3_rate) +  " " + str(indx))
